@@ -252,21 +252,34 @@
           <el-button @click="showPrintDialog = false">ปิด</el-button>
           <el-button 
             type="success" 
-            @click="generateAndShareBill" 
+            @click="generateBillImage" 
             :loading="isGeneratingImage"
             :disabled="isGeneratingImage"
           >
-            <el-icon v-if="!isGeneratingImage"><Share /></el-icon>
-            {{ isGeneratingImage ? 'กำลังสร้างภาพ...' : 'สร้างภาพและแชร์' }}
+            <el-icon v-if="!isGeneratingImage"><Picture /></el-icon>
+            {{ isGeneratingImage ? 'กำลังสร้างภาพ...' : 'สร้างภาพ' }}
           </el-button>
-          <el-button 
-            v-if="generatedImageUrl" 
-            type="primary" 
-            @click="downloadImage"
-          >
-            <el-icon><Download /></el-icon>
-            ดาวน์โหลดภาพ
-          </el-button>
+          
+          <!-- Share Options (show only when image is generated) -->
+          <template v-if="generatedImageUrl">
+
+
+            <el-button 
+              type="warning" 
+              @click="saveImageToDevice"
+              v-if="generatedImageUrl"
+            >
+              <el-icon><Download /></el-icon>
+              แชร์
+            </el-button>
+            <el-button 
+              type="info" 
+              @click="downloadImage"
+            >
+              <el-icon><Download /></el-icon>
+              ดาวน์โหลด
+            </el-button>
+          </template>
         </div>
       </template>
     </el-dialog>
@@ -315,6 +328,49 @@ const loadHtml2Canvas = async () => {
     script.onerror = () => reject(new Error('Failed to load html2canvas script'))
     document.head.appendChild(script)
   })
+}
+
+// ฟังก์ชันเฉพาะสำหรับบันทึกลงเครื่อง (สำหรับมือถือ)
+const saveImageToDevice = async () => {
+  if (!generatedImageUrl.value) {
+    await generateBillImage()
+  }
+  
+  try {
+    const response = await fetch(generatedImageUrl.value)
+    const blob = await response.blob()
+    const filename = `Bill_Room${selectedBill.value.roomId?.number}_${selectedBill.value.month}${selectedBill.value.year}.png`
+    
+    // สำหรับมือถือ: ใช้ Share API เพื่อบันทึก
+    if (navigator.share && navigator.canShare) {
+      const file = new File([blob], filename, { type: 'image/png' })
+      
+      if (navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: 'บันทึกใบแจ้งหนี้',
+        })
+        return
+      }
+    }
+    
+    // Fallback: ดาวน์โหลดแบบปกติ
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = filename
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+    
+    ElMessage.success('บันทึกรูปภาพสำเร็จ!')
+  } catch (error) {
+    if (error.name !== 'AbortError') {
+      console.error('Save error:', error)
+      ElMessage.error('ไม่สามารถบันทึกได้')
+    }
+  }
 }
 
 // Function to convert HTML to Canvas and then to Image
@@ -371,49 +427,9 @@ const generateBillImage = async () => {
   }
 }
 
-// Function to share or download the image
-const generateAndShareBill = async () => {
-  try {
-    const { blob } = await generateBillImage()
-    
-    // Create filename
-    const filename = `ใบแจ้งหนี้_ห้อง${selectedBill.value.roomId?.number}_${selectedBill.value.month}_${selectedBill.value.year}.png`
-    
-    // Check if Web Share API is supported
-    if (navigator.share) {
-      try {
-        const file = new File([blob], filename, { type: 'image/png' })
-        await navigator.share({
-          title: `ใบแจ้งหนี้ห้อง ${selectedBill.value.roomId?.number}`,
-          text: `ใบแจ้งหนี้ประจำเดือน ${selectedBill.value.month} ${selectedBill.value.year}`,
-          files: [file]
-        })
-        ElMessage.success('แชร์ภาพสำเร็จ!')
-        return
-      } catch (shareError) {
-        console.log('Share cancelled or failed:', shareError)
-      }
-    }
-    
-    // Fallback: Copy to clipboard or show download option
-    if (navigator.clipboard && window.ClipboardItem) {
-      try {
-        const clipboardItem = new ClipboardItem({ 'image/png': blob })
-        await navigator.clipboard.write([clipboardItem])
-        ElMessage.success('คัดลอกภาพไปยังคลิปบอร์ดแล้ว!')
-      } catch (clipboardError) {
-        console.log('Clipboard failed:', clipboardError)
-        ElMessage.info('ใช้ปุ่ม "ดาวน์โหลดภาพ" เพื่อบันทึกภาพ')
-      }
-    } else {
-      ElMessage.info('ใช้ปุ่ม "ดาวน์โหลดภาพ" เพื่อบันทึกภาพ')
-    }
-    
-  } catch (error) {
-    console.error('Error in generateAndShareBill:', error)
-    ElMessage.error(`เกิดข้อผิดพลาด: ${error.message}`)
-  }
-}
+
+
+
 
 // Function to download the image
 const downloadImage = () => {

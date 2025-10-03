@@ -49,6 +49,26 @@
           {{ row.totalCost?.toLocaleString() }}
         </template>
       </el-table-column>
+      <el-table-column label="จัดการ" width="180" fixed="right">
+        <template #default="{ row }">
+          <el-button 
+            type="warning" 
+            size="small" 
+            @click="openEditDialog(row)"
+            :icon="Edit"
+          >
+            แก้ไข
+          </el-button>
+          <el-button 
+            type="danger" 
+            size="small" 
+            @click="deleteReading(row._id)"
+            :icon="Delete"
+          >
+            ลบ
+          </el-button>
+        </template>
+      </el-table-column>
     </el-table>
 
     <!-- Add Reading Dialog -->
@@ -84,18 +104,47 @@
         <el-button type="primary" @click="saveReading">บันทึก</el-button>
       </template>
     </el-dialog>
+
+    <!-- Edit Reading Dialog -->
+    <el-dialog v-model="showEditDialog" title="แก้ไขมิเตอร์น้ำไฟ" width="500px">
+      <el-form :model="editForm" label-width="140px">
+        <el-form-item label="ห้อง">
+          <el-input :value="editRoomLabel" disabled />
+        </el-form-item>
+        <el-form-item label="วันที่บันทึก" required>
+          <el-date-picker
+            v-model="editForm.readingDate"
+            type="date"
+            placeholder="เลือกวันที่"
+            style="width: 100%"
+          />
+        </el-form-item>
+        <el-form-item label="มิเตอร์ไฟ (หน่วย)" required>
+          <el-input-number v-model="editForm.electricMeter" :min="0" style="width: 100%" />
+        </el-form-item>
+        <el-form-item label="มิเตอร์น้ำ (หน่วย)" required>
+          <el-input-number v-model="editForm.waterMeter" :min="0" style="width: 100%" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="showEditDialog = false">ยกเลิก</el-button>
+        <el-button type="primary" @click="updateReading">บันทึก</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ref, onMounted, computed } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { Edit, Delete } from '@element-plus/icons-vue'
 import axios from 'axios'
 
 const rooms = ref([])
 const readings = ref([])
 const loading = ref(false)
 const showAddDialog = ref(false)
+const showEditDialog = ref(false)
 const selectedRoom = ref('')
 
 const readingForm = ref({
@@ -103,6 +152,19 @@ const readingForm = ref({
   readingDate: new Date(),
   electricMeter: 0,
   waterMeter: 0
+})
+
+const editForm = ref({
+  _id: '',
+  roomId: '',
+  readingDate: new Date(),
+  electricMeter: 0,
+  waterMeter: 0
+})
+
+const editRoomLabel = computed(() => {
+  const room = rooms.value.find(r => r._id === editForm.value.roomId)
+  return room ? `ห้อง ${room.number} - ${room.tenant || 'ไม่มีผู้เช่า'}` : ''
 })
 
 const fetchRooms = async () => {
@@ -153,6 +215,60 @@ const saveReading = async () => {
     }
   } catch (error) {
     ElMessage.error('เกิดข้อผิดพลาดในการบันทึกข้อมูล')
+  }
+}
+
+const openEditDialog = (row) => {
+  editForm.value = {
+    _id: row._id,
+    roomId: row.roomId,
+    readingDate: new Date(row.readingDate),
+    electricMeter: row.electricMeter,
+    waterMeter: row.waterMeter
+  }
+  showEditDialog.value = true
+}
+
+const updateReading = async () => {
+  try {
+    if (!editForm.value.readingDate) {
+      ElMessage.error('กรุณากรอกข้อมูลให้ครบถ้วน')
+      return
+    }
+
+    await axios.put(`/api/meter-readings/${editForm.value._id}`, {
+      readingDate: editForm.value.readingDate,
+      electricMeter: editForm.value.electricMeter,
+      waterMeter: editForm.value.waterMeter
+    })
+    
+    ElMessage.success('แก้ไขมิเตอร์สำเร็จ')
+    showEditDialog.value = false
+    fetchReadings()
+  } catch (error) {
+    ElMessage.error(error.response?.data?.error || 'เกิดข้อผิดพลาดในการแก้ไขข้อมูล')
+  }
+}
+
+const deleteReading = async (id) => {
+  try {
+    await ElMessageBox.confirm(
+      'คุณต้องการลบข้อมูลมิเตอร์นี้หรือไม่?',
+      'ยืนยันการลบ',
+      {
+        confirmButtonText: 'ลบ',
+        cancelButtonText: 'ยกเลิก',
+        type: 'warning',
+      }
+    )
+
+    await axios.delete(`/api/meter-readings/${id}`)
+    ElMessage.success('ลบข้อมูลมิเตอร์สำเร็จ')
+    fetchReadings()
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error('เกิดข้อผิดพลาดในการลบข้อมูล')
+    }
   }
 }
 
