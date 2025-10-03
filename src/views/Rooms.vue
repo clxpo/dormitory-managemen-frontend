@@ -87,7 +87,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import axios from 'axios'
+import api from '@/api'
 
 const rooms = ref([])
 const loading = ref(false)
@@ -108,7 +108,7 @@ const roomForm = ref({
 const fetchRooms = async () => {
   loading.value = true
   try {
-    const response = await axios.get('/api/rooms')
+    const response = await api.get('/rooms')
     rooms.value = response.data
   } catch (error) {
     ElMessage.error('เกิดข้อผิดพลาดในการโหลดข้อมูลห้องพัก')
@@ -125,10 +125,10 @@ const editRoom = (room) => {
 const saveRoom = async () => {
   try {
     if (editingRoom.value) {
-      await axios.put(`/api/rooms/${editingRoom.value._id}`, roomForm.value)
+      await api.put(`/rooms/${editingRoom.value._id}`, roomForm.value)
       ElMessage.success('แก้ไขห้องพักสำเร็จ')
     } else {
-      await axios.post('/api/rooms', roomForm.value)
+      await api.post('/rooms', roomForm.value)
       ElMessage.success('เพิ่มห้องพักสำเร็จ')
     }
     
@@ -166,7 +166,7 @@ const deleteRoom = async (room) => {
       }
     )
     
-    await axios.delete(`/api/rooms/${room._id}`)
+    await api.delete(`/rooms/${room._id}`)
     ElMessage.success('ลบห้องพักสำเร็จ')
     fetchRooms()
   } catch (error) {

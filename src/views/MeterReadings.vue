@@ -138,7 +138,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Edit, Delete } from '@element-plus/icons-vue'
-import axios from 'axios'
+import api from '@/api'
 
 const rooms = ref([])
 const readings = ref([])
@@ -169,7 +169,7 @@ const editRoomLabel = computed(() => {
 
 const fetchRooms = async () => {
   try {
-    const response = await axios.get('/api/rooms')
+    const response = await api.get('/rooms')
     rooms.value = response.data
   } catch (error) {
     ElMessage.error('เกิดข้อผิดพลาดในการโหลดข้อมูลห้องพัก')
@@ -184,7 +184,7 @@ const fetchReadings = async () => {
   
   loading.value = true
   try {
-    const response = await axios.get(`/api/meter-readings/${selectedRoom.value}`)
+    const response = await api.get(`/meter-readings/${selectedRoom.value}`)
     readings.value = response.data
   } catch (error) {
     ElMessage.error('เกิดข้อผิดพลาดในการโหลดข้อมูลมิเตอร์')
@@ -199,7 +199,7 @@ const saveReading = async () => {
       return
     }
 
-    await axios.post('/api/meter-readings', readingForm.value)
+    await api.post('/meter-readings', readingForm.value)
     ElMessage.success('บันทึกมิเตอร์สำเร็จ')
     
     showAddDialog.value = false
@@ -236,7 +236,7 @@ const updateReading = async () => {
       return
     }
 
-    await axios.put(`/api/meter-readings/${editForm.value._id}`, {
+    await api.put(`/meter-readings/${editForm.value._id}`, {
       readingDate: editForm.value.readingDate,
       electricMeter: editForm.value.electricMeter,
       waterMeter: editForm.value.waterMeter
@@ -262,7 +262,7 @@ const deleteReading = async (id) => {
       }
     )
 
-    await axios.delete(`/api/meter-readings/${id}`)
+    await api.delete(`/meter-readings/${id}`)
     ElMessage.success('ลบข้อมูลมิเตอร์สำเร็จ')
     fetchReadings()
   } catch (error) {

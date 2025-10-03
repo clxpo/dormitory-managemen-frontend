@@ -289,7 +289,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import axios from 'axios'
+import api from '@/api'
 
 const bills = ref([])
 const rooms = ref([])
@@ -467,7 +467,7 @@ const filteredBills = computed(() => {
 const fetchBills = async () => {
   loading.value = true
   try {
-    const response = await axios.get('/api/bills')
+    const response = await api.get('/bills')
     bills.value = response.data
   } catch (error) {
     console.error('Error fetching bills:', error)
@@ -478,7 +478,7 @@ const fetchBills = async () => {
 
 const fetchRooms = async () => {
   try {
-    const response = await axios.get('/api/rooms')
+    const response = await api.get('/rooms')
     rooms.value = response.data
   } catch (error) {
     ElMessage.error('เกิดข้อผิดพลาดในการโหลดข้อมูลห้องพัก')
@@ -494,7 +494,7 @@ const generateBill = async () => {
 
     console.log('Sending bill data:', billForm.value)
 
-    const response = await axios.post('/api/bills/generate', {
+    const response = await api.post('/bills/generate', {
       roomId: billForm.value.roomId,
       month: billForm.value.month,
       year: parseInt(billForm.value.year)
@@ -531,7 +531,7 @@ const generateBill = async () => {
 const togglePaymentStatus = async (bill) => {
   try {
     const newStatus = bill.status === 'paid' ? 'unpaid' : 'paid'
-    await axios.put(`/api/bills/${bill._id}/status`, { status: newStatus })
+    await api.put(`/bills/${bill._id}/status`, { status: newStatus })
     ElMessage.success('อัปเดตสถานะการจ่ายเงินสำเร็จ')
     fetchBills()
   } catch (error) {
@@ -557,7 +557,7 @@ const deleteBill = async (bill) => {
       }
     )
     
-    await axios.delete(`/api/bills/${bill._id}`)
+    await api.delete(`/bills/${bill._id}`)
     ElMessage.success('ลบบิลสำเร็จ')
     fetchBills()
   } catch (error) {

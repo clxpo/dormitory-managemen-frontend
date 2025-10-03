@@ -93,7 +93,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import axios from 'axios'
+import api from '@/api'
 
 const stats = ref({
   totalRooms: 0,
@@ -107,7 +107,7 @@ const recentRooms = ref([])
 
 const fetchStats = async () => {
   try {
-    const response = await axios.get('/api/dashboard/stats')
+    const response = await api.get('/dashboard/stats')
     stats.value = response.data
   } catch (error) {
     console.error('Error fetching stats:', error)
@@ -116,7 +116,7 @@ const fetchStats = async () => {
 
 const fetchRecentRooms = async () => {
   try {
-    const response = await axios.get('/api/rooms')
+    const response = await api.get('/rooms')
     recentRooms.value = response.data.filter(room => room.status === 'occupied')
   } catch (error) {
     console.error('Error fetching rooms:', error)

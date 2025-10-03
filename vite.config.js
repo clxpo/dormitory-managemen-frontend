@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { internalIpV4 } from 'internal-ip'
+import path from 'path'
 
 export default defineConfig(async () => {
   // หา IP อัตโนมัติ (await)
@@ -8,6 +9,11 @@ export default defineConfig(async () => {
 
   return {
     plugins: [vue()],
+     resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src')
+    }
+    },
     server: {
       host: true,
       port: 5173,
