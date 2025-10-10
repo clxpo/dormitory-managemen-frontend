@@ -1,8 +1,8 @@
 <template>
   <div>
     <el-row :gutter="20">
-      <el-col :span="6">
-        <el-card shadow="hover">
+      <el-col :xs="12" :sm="12" :md="6" :lg="6" :xl="6">
+        <el-card shadow="hover" class="stat-card-wrapper">
           <div class="stat-card">
             <el-icon size="40" color="#409eff"><OfficeBuilding /></el-icon>
             <div class="stat-info">
@@ -13,8 +13,8 @@
         </el-card>
       </el-col>
       
-      <el-col :span="6">
-        <el-card shadow="hover">
+      <el-col :xs="12" :sm="12" :md="6" :lg="6" :xl="6">
+        <el-card shadow="hover" class="stat-card-wrapper">
           <div class="stat-card">
             <el-icon size="40" color="#67c23a"><User /></el-icon>
             <div class="stat-info">
@@ -25,8 +25,8 @@
         </el-card>
       </el-col>
       
-      <el-col :span="6">
-        <el-card shadow="hover">
+      <el-col :xs="12" :sm="12" :md="6" :lg="6" :xl="6">
+        <el-card shadow="hover" class="stat-card-wrapper">
           <div class="stat-card">
             <el-icon size="40" color="#e6a23c"><House /></el-icon>
             <div class="stat-info">
@@ -37,8 +37,8 @@
         </el-card>
       </el-col>
       
-      <el-col :span="6">
-        <el-card shadow="hover">
+      <el-col :xs="12" :sm="12" :md="6" :lg="6" :xl="6">
+        <el-card shadow="hover" class="stat-card-wrapper">
           <div class="stat-card">
             <el-icon size="40" color="#f56c6c"><Warning /></el-icon>
             <div class="stat-info">
@@ -51,7 +51,7 @@
     </el-row>
 
     <el-row :gutter="20" style="margin-top: 20px;">
-      <el-col :span="12">
+      <el-col :xs="24" :sm="24" :md="12" :lg="12" :xl="12">
         <el-card shadow="hover">
           <template #header>
             <div class="card-header">
@@ -69,8 +69,8 @@
         </el-card>
       </el-col>
       
-      <el-col :span="12">
-        <el-card shadow="hover">
+      <el-col :xs="24" :sm="24" :md="12" :lg="12" :xl="12">
+        <el-card shadow="hover" class="recent-rooms-card">
           <template #header>
             <div class="card-header">
               <span>ห้องที่เช่าล่าสุด</span>
@@ -140,6 +140,10 @@ onMounted(() => {
   gap: 15px;
 }
 
+.stat-card-wrapper {
+  margin-bottom: 20px;
+}
+
 .stat-info h3 {
   margin: 0;
   font-size: 24px;
@@ -149,6 +153,7 @@ onMounted(() => {
 .stat-info p {
   margin: 5px 0 0 0;
   color: #909399;
+  font-size: 14px;
 }
 
 .revenue-display {
@@ -172,5 +177,66 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   font-weight: bold;
+}
+
+.recent-rooms-card {
+  margin-bottom: 20px;
+}
+
+/* Responsive adjustments for mobile */
+@media (max-width: 768px) {
+  .stat-card {
+    gap: 10px;
+  }
+  
+  .stat-info h3 {
+    font-size: 20px;
+  }
+  
+  .stat-info p {
+    font-size: 12px;
+  }
+  
+  .el-icon {
+    font-size: 32px !important;
+  }
+  
+  .revenue-display {
+    padding: 15px;
+  }
+  
+  .revenue-display h2 {
+    font-size: 24px !important;
+  }
+  
+  .recent-room {
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .stat-card {
+    flex-direction: column;
+    text-align: center;
+    gap: 8px;
+  }
+  
+  .stat-info h3 {
+    font-size: 18px;
+  }
+  
+  .stat-info p {
+    font-size: 11px;
+  }
+  
+  .revenue-display h2 {
+    font-size: 20px !important;
+  }
+  
+  .recent-room {
+    flex-direction: column;
+    gap: 5px;
+    text-align: center;
+  }
 }
 </style>

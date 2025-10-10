@@ -9,15 +9,25 @@
 
     <el-card shadow="hover" style="margin-bottom: 20px;">
       <el-row :gutter="20">
-        <el-col :span="6">
-          <el-select v-model="filterStatus" placeholder="ทุกสถานะ" style="width: 100%" @change="filterBills">
+        <el-col :xs="24" :sm="12" :md="6">
+          <el-select 
+            v-model="filterStatus" 
+            placeholder="ทุกสถานะ" 
+            style="width: 100%; margin-bottom: 10px;" 
+            @change="filterBills"
+          >
             <el-option label="ทุกสถานะ" value="" />
             <el-option label="ยังไม่จ่าย" value="unpaid" />
             <el-option label="จ่ายแล้ว" value="paid" />
           </el-select>
         </el-col>
-        <el-col :span="6">
-          <el-select v-model="filterRoom" placeholder="ทุกห้อง" style="width: 100%" @change="filterBills">
+        <el-col :xs="24" :sm="12" :md="6">
+          <el-select 
+            v-model="filterRoom" 
+            placeholder="ทุกห้อง" 
+            style="width: 100%;" 
+            @change="filterBills"
+          >
             <el-option label="ทุกห้อง" value="" />
             <el-option
               v-for="room in rooms"
@@ -30,7 +40,13 @@
       </el-row>
     </el-card>
 
-    <el-table :data="filteredBills" v-loading="loading" style="width: 100%">
+    <!-- Desktop Table View -->
+    <el-table 
+      v-if="!isMobileView"
+      :data="filteredBills" 
+      v-loading="loading" 
+      style="width: 100%"
+    >
       <el-table-column label="ห้อง" width="80">
         <template #default="{ row }">
           {{ row.roomId?.number }}
@@ -114,9 +130,107 @@
       </el-table-column>
     </el-table>
 
+    <!-- Mobile/Tablet Card View -->
+    <div v-else v-loading="loading">
+      <el-empty v-if="filteredBills.length === 0" description="ไม่มีข้อมูลบิล" />
+      <el-card 
+        v-for="bill in filteredBills" 
+        :key="bill._id" 
+        shadow="hover" 
+        class="bill-card"
+      >
+        <div class="card-header">
+          <div class="room-info">
+            <span class="room-badge">ห้อง {{ bill.roomId?.number }}</span>
+            <span class="tenant-name">{{ bill.roomId?.tenant || 'ไม่มีผู้เช่า' }}</span>
+          </div>
+          <el-tag :type="bill.status === 'paid' ? 'success' : 'warning'" size="large">
+            {{ bill.status === 'paid' ? 'จ่ายแล้ว' : 'ยังไม่จ่าย' }}
+          </el-tag>
+        </div>
+
+        <div class="period-info">
+          <span class="period">{{ bill.month }} {{ bill.year }}</span>
+          <span class="due-date">ครบกำหนด: {{ new Date(bill.dueDate).toLocaleDateString('th-TH') }}</span>
+        </div>
+
+        <el-divider />
+
+        <div class="bill-details">
+          <div class="detail-item">
+            <span class="label">ค่าเช่าห้อง</span>
+            <span class="value">฿{{ bill.rentFee?.toLocaleString() }}</span>
+          </div>
+          
+          <div class="detail-item highlight">
+            <div class="label-group">
+              <span class="label">ค่าไฟฟ้า</span>
+              <span class="usage" v-if="bill.meterData">
+                {{ bill.meterData.previous.electric }} → {{ bill.meterData.current.electric }}
+              </span>
+            </div>
+            <div class="value-group">
+              <span class="usage-badge">{{ bill.electricUsage }} หน่วย</span>
+              <span class="value">฿{{ bill.electricCost?.toLocaleString() }}</span>
+            </div>
+          </div>
+
+          <div class="detail-item highlight">
+            <div class="label-group">
+              <span class="label">ค่าน้ำประปา</span>
+              <span class="usage" v-if="bill.meterData">
+                {{ bill.meterData.previous.water }} → {{ bill.meterData.current.water }}
+              </span>
+            </div>
+            <div class="value-group">
+              <span class="usage-badge">{{ bill.waterUsage }} หน่วย</span>
+              <span class="value">฿{{ bill.waterCost?.toLocaleString() }}</span>
+            </div>
+          </div>
+        </div>
+
+        <el-divider />
+
+        <div class="total-section">
+          <span class="total-label">รวมทั้งหมด</span>
+          <span class="total-value">฿{{ bill.totalAmount?.toLocaleString() }}</span>
+        </div>
+
+        <div class="card-actions">
+          <el-button 
+            :type="bill.status === 'paid' ? 'warning' : 'success'"
+            @click="togglePaymentStatus(bill)"
+            style="flex: 1"
+          >
+            {{ bill.status === 'paid' ? 'ยกเลิกจ่าย' : 'จ่ายแล้ว' }}
+          </el-button>
+          <el-button 
+            type="info" 
+            @click="printBill(bill)"
+            style="flex: 1"
+          >
+            แชร์
+          </el-button>
+          <el-button 
+            type="danger" 
+            @click="deleteBill(bill)"
+            style="flex: 1"
+          >
+            ลบ
+          </el-button>
+        </div>
+      </el-card>
+    </div>
+
     <!-- Generate Bill Dialog -->
-    <el-dialog v-model="showGenerateDialog" title="สร้างบิลรายเดือน" width="400px">
-      <el-form :model="billForm" label-width="100px">
+    <el-dialog 
+      v-model="showGenerateDialog" 
+      title="สร้างบิลรายเดือน" 
+      :width="isMobileView ? '90%' : '400px'"
+      center
+      align-center
+    >
+      <el-form :model="billForm" :label-width="isMobileView ? '80px' : '100px'">
         <el-form-item label="ห้อง" required>
           <el-select v-model="billForm.roomId" placeholder="เลือกห้อง" style="width: 100%">
             <el-option
@@ -154,7 +268,14 @@
     </el-dialog>
 
     <!-- Share Bill Dialog -->
-    <el-dialog v-model="showPrintDialog" title="แชร์ใบแจ้งหนี้" width="700px">
+    <el-dialog 
+      v-model="showPrintDialog" 
+      title="แชร์ใบแจ้งหนี้" 
+      :width="isMobileView ? '95%' : '700px'"
+      center
+      align-center
+      :fullscreen="isMobileView"
+    >
       <div v-if="selectedBill" class="bill-container">
         <!-- Bill Content for Image Generation -->
         <div ref="billContent" class="bill-print" id="bill-to-share">
@@ -165,7 +286,7 @@
             </div>
           </div>
           
-          <div class="bill-details">
+          <div class="bill-details-print">
             <div class="detail-row">
               <span class="detail-label">ห้อง:</span>
               <span class="detail-value">{{ selectedBill.roomId?.number }}</span>
@@ -241,7 +362,7 @@
         </div>
 
         <!-- Preview Generated Image -->
-        <div v-if="generatedImageUrl" class="image-preview" style="margin-top: 20px;">
+        <div v-if="generatedImageUrl" class="image-preview">
           <h4>ตัวอย่างภาพที่สร้างขึ้น:</h4>
           <img :src="generatedImageUrl" alt="Bill Image" style="max-width: 100%; height: auto; border: 1px solid #ddd; border-radius: 4px;" />
         </div>
@@ -262,12 +383,9 @@
           
           <!-- Share Options (show only when image is generated) -->
           <template v-if="generatedImageUrl">
-
-
             <el-button 
               type="warning" 
               @click="saveImageToDevice"
-              v-if="generatedImageUrl"
             >
               <el-icon><Download /></el-icon>
               แชร์
@@ -287,8 +405,9 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { Plus, Picture, Download } from '@element-plus/icons-vue'
 import api from '@/api'
 
 const bills = ref([])
@@ -302,6 +421,9 @@ const filterRoom = ref('')
 const isGeneratingImage = ref(false)
 const generatedImageUrl = ref('')
 const billContent = ref(null)
+const screenWidth = ref(window.innerWidth)
+
+const isMobileView = computed(() => screenWidth.value <= 1024)
 
 const billForm = ref({
   roomId: '',
@@ -402,7 +524,7 @@ const generateBillImage = async () => {
       height: element.scrollHeight,
       scrollX: 0,
       scrollY: 0,
-      logging: false, // Disable console logs
+      logging: false,
       removeContainer: true,
       async: true
     })
@@ -413,6 +535,7 @@ const generateBillImage = async () => {
         if (blob) {
           const url = URL.createObjectURL(blob)
           generatedImageUrl.value = url
+          ElMessage.success('สร้างภาพสำเร็จ!')
           resolve({ blob, url })
         } else {
           reject(new Error('ไม่สามารถสร้างภาพได้'))
@@ -421,15 +544,12 @@ const generateBillImage = async () => {
     })
   } catch (error) {
     console.error('Error generating image:', error)
+    ElMessage.error('เกิดข้อผิดพลาดในการสร้างภาพ')
     throw error
   } finally {
     isGeneratingImage.value = false
   }
 }
-
-
-
-
 
 // Function to download the image
 const downloadImage = () => {
@@ -492,8 +612,6 @@ const generateBill = async () => {
       return
     }
 
-    console.log('Sending bill data:', billForm.value)
-
     const response = await api.post('/bills/generate', {
       roomId: billForm.value.roomId,
       month: billForm.value.month,
@@ -541,7 +659,7 @@ const togglePaymentStatus = async (bill) => {
 
 const printBill = (bill) => {
   selectedBill.value = bill
-  generatedImageUrl.value = '' // Reset previous image
+  generatedImageUrl.value = ''
   showPrintDialog.value = true
 }
 
@@ -572,13 +690,170 @@ const filterBills = () => {
   // The computed property will automatically update
 }
 
+const handleResize = () => {
+  screenWidth.value = window.innerWidth
+}
+
 onMounted(() => {
   fetchBills()
   fetchRooms()
+  window.addEventListener('resize', handleResize)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize)
 })
 </script>
 
 <style scoped>
+/* Mobile Card Styles */
+.bill-card {
+  margin-bottom: 15px;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.room-info {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.room-badge {
+  background-color: #409eff;
+  color: white;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  display: inline-block;
+  width: fit-content;
+}
+
+.tenant-name {
+  color: #606266;
+  font-size: 13px;
+  margin-left: 2px;
+}
+
+.period-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  background: #f0f9ff;
+  border-radius: 6px;
+  margin-bottom: 10px;
+}
+
+.period {
+  font-weight: 600;
+  color: #409eff;
+  font-size: 15px;
+}
+
+.due-date {
+  color: #909399;
+  font-size: 13px;
+}
+
+.bill-details {
+  margin: 15px 0;
+}
+
+.detail-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.detail-item:last-child {
+  border-bottom: none;
+}
+
+.detail-item.highlight {
+  background: #f9fafb;
+  padding: 10px;
+  margin: 8px -10px;
+  border-radius: 6px;
+  border-bottom: none;
+}
+
+.label-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.label {
+  font-weight: 500;
+  color: #606266;
+  font-size: 14px;
+}
+
+.usage {
+  font-size: 11px;
+  color: #909399;
+}
+
+.value-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.usage-badge {
+  background: #ecf5ff;
+  color: #409eff;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.value {
+  font-weight: 600;
+  color: #303133;
+  font-size: 15px;
+}
+
+.total-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f0f9ff;
+  padding: 15px;
+  border-radius: 8px;
+  margin: 15px -10px;
+}
+
+.total-label {
+  font-weight: 700;
+  color: #409eff;
+  font-size: 16px;
+}
+
+.total-value {
+  font-weight: 700;
+  color: #409eff;
+  font-size: 18px;
+}
+
+.card-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 15px;
+}
+
+/* Bill Print Styles */
 .bill-container {
   max-height: 70vh;
   overflow-y: auto;
@@ -604,7 +879,7 @@ onMounted(() => {
   border-radius: 8px 8px 0 0;
 }
 
-.bill-details {
+.bill-details-print {
   margin-bottom: 25px;
   background: #f9f9f9;
   padding: 20px;
@@ -715,6 +990,12 @@ onMounted(() => {
   background: #f5f5f5;
   border-radius: 6px;
   border: 1px dashed #ccc;
+  margin-top: 20px;
+}
+
+.image-preview h4 {
+  margin-top: 0;
+  color: #606266;
 }
 
 .dialog-footer {
@@ -722,9 +1003,48 @@ onMounted(() => {
   gap: 10px;
   justify-content: flex-end;
   align-items: center;
+  flex-wrap: wrap;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 1024px) {
+  .bill-card {
+    margin-bottom: 12px;
+  }
 }
 
 @media (max-width: 768px) {
+  .room-badge {
+    font-size: 13px;
+    padding: 3px 10px;
+  }
+  
+  .tenant-name {
+    font-size: 12px;
+  }
+  
+  .period {
+    font-size: 14px;
+  }
+  
+  .due-date {
+    font-size: 12px;
+  }
+  
+  .card-actions {
+    flex-wrap: wrap;
+  }
+  
+  .card-actions .el-button {
+    flex: 1 1 calc(50% - 4px);
+    min-width: calc(50% - 4px);
+  }
+  
+  .card-actions .el-button:last-child {
+    flex: 1 1 100%;
+  }
+
+  /* Bill Print Responsive */
   .bill-print {
     padding: 20px;
     font-size: 12px;
@@ -744,7 +1064,11 @@ onMounted(() => {
     padding: 20px;
   }
   
-  .bill-details {
+  .bill-header h2 {
+    font-size: 18px;
+  }
+  
+  .bill-details-print {
     padding: 15px;
   }
   
@@ -754,6 +1078,76 @@ onMounted(() => {
     margin-right: -20px;
     padding-left: 20px;
     padding-right: 20px;
+  }
+  
+  .dialog-footer {
+    justify-content: center;
+  }
+  
+  .dialog-footer .el-button {
+    flex: 1;
+    min-width: 80px;
+  }
+}
+
+@media (max-width: 480px) {
+  .total-section {
+    flex-direction: column;
+    gap: 8px;
+    text-align: center;
+  }
+  
+  .bill-table th,
+  .bill-table td {
+    padding: 6px 4px;
+    font-size: 10px;
+  }
+  
+  .bill-header h2 {
+    font-size: 16px;
+  }
+}
+
+/* Dialog Responsive */
+@media (max-width: 1024px) {
+  :deep(.el-dialog) {
+    margin: 5vh auto !important;
+  }
+  
+  :deep(.el-dialog__body) {
+    padding: 15px;
+    max-height: 70vh;
+    overflow-y: auto;
+  }
+  
+  :deep(.el-dialog__header) {
+    padding: 15px;
+  }
+  
+  :deep(.el-form-item__label) {
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 768px) {
+  :deep(.el-dialog) {
+    margin: 15vh auto !important;
+  }
+  
+  :deep(.el-dialog.is-fullscreen) {
+    margin: 0 !important;
+  }
+  
+  :deep(.el-dialog__body) {
+    padding: 12px;
+  }
+  
+  :deep(.el-dialog__header) {
+    padding: 12px;
+  }
+  
+  :deep(.el-form-item) {
+    margin-bottom: 16px;
   }
 }
 </style>

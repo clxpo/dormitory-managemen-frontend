@@ -3,11 +3,17 @@
     <div style="margin-bottom: 20px;">
       <el-button type="primary" @click="showAddDialog = true">
         <el-icon><Plus /></el-icon>
-        เพิ่มห้องพัก
+        <span class="button-text">เพิ่มห้องพัก</span>
       </el-button>
     </div>
 
-    <el-table :data="rooms" v-loading="loading" style="width: 100%">
+    <!-- Desktop Table View -->
+    <el-table 
+      v-if="!isMobile" 
+      :data="rooms" 
+      v-loading="loading" 
+      style="width: 100%"
+    >
       <el-table-column prop="number" label="หมายเลขห้อง" width="120" />
       <el-table-column prop="tenant" label="ผู้เช่า" />
       <el-table-column prop="phone" label="เบอร์โทร" />
@@ -45,9 +51,71 @@
       </el-table-column>
     </el-table>
 
+    <!-- Mobile Card View -->
+    <div v-else v-loading="loading">
+      <el-card 
+        v-for="room in rooms" 
+        :key="room._id" 
+        class="room-card"
+        shadow="hover"
+      >
+        <div class="room-card-header">
+          <div>
+            <h3 class="room-number">ห้อง {{ room.number }}</h3>
+            <el-tag 
+              :type="room.status === 'occupied' ? 'success' : 'info'"
+              size="small"
+            >
+              {{ room.status === 'occupied' ? 'มีผู้เช่า' : 'ว่าง' }}
+            </el-tag>
+          </div>
+          <div class="room-actions">
+            <el-button size="small" circle @click="editRoom(room)">
+              <el-icon><Edit /></el-icon>
+            </el-button>
+            <el-button size="small" type="danger" circle @click="deleteRoom(room)">
+              <el-icon><Delete /></el-icon>
+            </el-button>
+          </div>
+        </div>
+
+        <el-divider style="margin: 12px 0" />
+
+        <div class="room-info">
+          <div class="info-row" v-if="room.tenant">
+            <span class="info-label">ผู้เช่า:</span>
+            <span class="info-value">{{ room.tenant }}</span>
+          </div>
+          <div class="info-row" v-if="room.phone">
+            <span class="info-label">เบอร์โทร:</span>
+            <span class="info-value">{{ room.phone }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">ค่าเช่า:</span>
+            <span class="info-value highlight">฿{{ room.rentFee?.toLocaleString() }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">ค่าไฟ/หน่วย:</span>
+            <span class="info-value">฿{{ room.electricRate }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">ค่าน้ำ/หน่วย:</span>
+            <span class="info-value">฿{{ room.waterRate }}</span>
+          </div>
+        </div>
+      </el-card>
+
+      <el-empty v-if="rooms.length === 0 && !loading" description="ไม่มีข้อมูลห้องพัก" />
+    </div>
+
     <!-- Add/Edit Room Dialog -->
-    <el-dialog v-model="showAddDialog" :title="editingRoom ? 'แก้ไขห้องพัก' : 'เพิ่มห้องพัก'" width="500px">
-      <el-form :model="roomForm" label-width="120px">
+    <el-dialog 
+      v-model="showAddDialog" 
+      :title="editingRoom ? 'แก้ไขห้องพัก' : 'เพิ่มห้องพัก'" 
+      :width="dialogWidth"
+      :fullscreen="isMobile"
+    >
+      <el-form :model="roomForm" :label-width="labelWidth">
         <el-form-item label="หมายเลขห้อง" required>
           <el-input v-model="roomForm.number" />
         </el-form-item>
@@ -85,7 +153,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import api from '@/api'
 
@@ -93,6 +161,11 @@ const rooms = ref([])
 const loading = ref(false)
 const showAddDialog = ref(false)
 const editingRoom = ref(null)
+const screenWidth = ref(window.innerWidth)
+
+const isMobile = computed(() => screenWidth.value < 768)
+const dialogWidth = computed(() => isMobile.value ? '100%' : '500px')
+const labelWidth = computed(() => isMobile.value ? '100px' : '120px')
 
 const roomForm = ref({
   number: '',
@@ -176,7 +249,91 @@ const deleteRoom = async (room) => {
   }
 }
 
+const handleResize = () => {
+  screenWidth.value = window.innerWidth
+}
+
 onMounted(() => {
   fetchRooms()
+  window.addEventListener('resize', handleResize)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize)
 })
 </script>
+
+<style scoped>
+/* Mobile Card View */
+.room-card {
+  margin-bottom: 15px;
+}
+
+.room-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.room-number {
+  margin: 0 0 8px 0;
+  font-size: 18px;
+  font-weight: bold;
+  color: #303133;
+}
+
+.room-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.room-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+}
+
+.info-label {
+  color: #606266;
+  font-size: 14px;
+}
+
+.info-value {
+  color: #303133;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.info-value.highlight {
+  color: #409eff;
+  font-weight: bold;
+  font-size: 16px;
+}
+
+/* Responsive button text */
+@media (max-width: 480px) {
+  .button-text {
+    display: none;
+  }
+  
+  .room-number {
+    font-size: 16px;
+  }
+  
+  .info-label,
+  .info-value {
+    font-size: 13px;
+  }
+  
+  .info-value.highlight {
+    font-size: 15px;
+  }
+}
+</style>
