@@ -94,6 +94,11 @@
           ฿{{ row.waterCost?.toLocaleString() }}
         </template>
       </el-table-column>
+      <el-table-column label="ค่าส่วนกลาง" width="120">
+        <template #default="{ row }">
+          ฿{{ row.roomId?.commonFee?.toLocaleString() || 0 }}
+        </template>
+      </el-table-column>
       <el-table-column label="รวมทั้งหมด" width="120">
         <template #default="{ row }">
           ฿{{ row.totalAmount?.toLocaleString() }}
@@ -160,6 +165,10 @@
           <div class="detail-item">
             <span class="label">ค่าเช่าห้อง</span>
             <span class="value">฿{{ bill.rentFee?.toLocaleString() }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">ค่าส่วนกลาง</span>
+            <span class="value">฿{{ bill.roomId?.commonFee?.toLocaleString() || 0 }}</span>
           </div>
           
           <div class="detail-item highlight">
@@ -322,6 +331,14 @@
                 <td>฿{{ selectedBill.rentFee?.toLocaleString() }}</td>
               </tr>
               <tr>
+                <td>ค่าส่วนกลาง</td>
+                <td>-</td>
+                <td>-</td>
+                <td>1 เดือน</td>
+                <td>฿{{ selectedBill.roomId?.commonFee?.toLocaleString() || 0 }}</td>
+                <td>฿{{ (selectedBill.roomId?.commonFee || 0).toLocaleString() }}</td>
+              </tr>
+              <tr>
                 <td>ค่าไฟฟ้า</td>
                 <td>{{ selectedBill.meterData?.previous?.electric || '-' }}</td>
                 <td>{{ selectedBill.meterData?.current?.electric || '-' }}</td>
@@ -352,8 +369,13 @@
             </p>
           </div>
 
+          <!-- แสดงรายละเอียดเพิ่มเติมใต้ช่วงการใช้งาน (ถ้ามี) -->
+          <div v-if="selectedBill.roomId?.additionalDetails" style="text-align: center; color: #666; margin-top: 10px; font-size: 13px;">
+            {{ selectedBill.roomId.additionalDetails }}
+          </div>
+
           <!-- แจ้งเตือนเมื่อไม่มีข้อมูลมิเตอร์ -->
-          <div v-else class="no-meter-warning">
+          <div v-if="!selectedBill.meterData" class="no-meter-warning">
             <p style="text-align: center; color: #856404; margin: 15px 0; font-size: 14px;">
               ⚠️ ไม่พบข้อมูลการอ่านมิเตอร์สำหรับเดือนนี้
               <br>กรุณาบันทึกข้อมูลมิเตอร์ก่อนสร้างบิล

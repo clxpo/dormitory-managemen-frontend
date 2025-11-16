@@ -32,6 +32,21 @@
           ฿{{ row.waterRate }}
         </template>
       </el-table-column>
+      <el-table-column label="Max มิเตอร์ไฟ" width="120">
+        <template #default="{ row }">
+          {{ row.meterMaxElectric ?? '-' }}
+        </template>
+      </el-table-column>
+      <el-table-column label="Max มิเตอร์น้ำ" width="120">
+        <template #default="{ row }">
+          {{ row.meterMaxWater ?? '-' }}
+        </template>
+      </el-table-column>
+      <el-table-column label="ค่าส่วนกลาง" width="140">
+        <template #default="{ row }">
+          ฿{{ row.commonFee?.toLocaleString() || 0 }}
+        </template>
+      </el-table-column>
       <el-table-column prop="status" label="สถานะ" width="100">
         <template #default="{ row }">
           <el-tag :type="row.status === 'occupied' ? 'success' : 'info'">
@@ -95,12 +110,28 @@
             <span class="info-value highlight">฿{{ room.rentFee?.toLocaleString() }}</span>
           </div>
           <div class="info-row">
+            <span class="info-label">ค่าส่วนกลาง:</span>
+            <span class="info-value">฿{{ room.commonFee?.toLocaleString() || 0 }}</span>
+          </div>
+          <div class="info-row">
             <span class="info-label">ค่าไฟ/หน่วย:</span>
             <span class="info-value">฿{{ room.electricRate }}</span>
           </div>
           <div class="info-row">
             <span class="info-label">ค่าน้ำ/หน่วย:</span>
             <span class="info-value">฿{{ room.waterRate }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Max มิเตอร์ไฟ:</span>
+            <span class="info-value">{{ room.meterMaxElectric ?? '-' }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Max มิเตอร์น้ำ:</span>
+            <span class="info-value">{{ room.meterMaxWater ?? '-' }}</span>
+          </div>
+          <div class="info-row" v-if="room.additionalDetails">
+            <span class="info-label">รายละเอียดเพิ่มเติม:</span>
+            <span class="info-value">{{ room.additionalDetails }}</span>
           </div>
         </div>
       </el-card>
@@ -136,6 +167,18 @@
         </el-form-item>
         <el-form-item label="ค่าน้ำ/หน่วย">
           <el-input-number v-model="roomForm.waterRate" :min="0" :precision="2" style="width: 100%" />
+        </el-form-item>
+        <el-form-item label="Max มิเตอร์ไฟ">
+          <el-input-number v-model="roomForm.meterMaxElectric" :min="0" style="width: 100%" />
+        </el-form-item>
+        <el-form-item label="Max มิเตอร์น้ำ">
+          <el-input-number v-model="roomForm.meterMaxWater" :min="0" style="width: 100%" />
+        </el-form-item>
+        <el-form-item label="ค่าส่วนกลาง (บาท)">
+          <el-input-number v-model="roomForm.commonFee" :min="0" style="width: 100%" />
+        </el-form-item>
+        <el-form-item label="รายละเอียดเพิ่มเติม">
+          <el-input type="textarea" v-model="roomForm.additionalDetails" placeholder="เช่น เงื่อนไขหรือหมายเหตุเพิ่มเติม" rows="3" />
         </el-form-item>
         <el-form-item label="สถานะ">
           <el-select v-model="roomForm.status" style="width: 100%">
@@ -175,6 +218,11 @@ const roomForm = ref({
   deposit: 0,
   electricRate: 6,
   waterRate: 20,
+  // new fields from backend
+  meterMaxElectric: 9999,
+  meterMaxWater: 9999,
+  commonFee: 0,
+  additionalDetails: '',
   status: 'vacant'
 })
 
@@ -215,6 +263,11 @@ const saveRoom = async () => {
       deposit: 0,
       electricRate: 6,
       waterRate: 20,
+      // keep defaults for newly added fields
+      meterMaxElectric: 9999,
+      meterMaxWater: 9999,
+      commonFee: 0,
+      additionalDetails: '',
       status: 'vacant'
     }
     fetchRooms()
