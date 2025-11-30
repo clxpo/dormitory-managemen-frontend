@@ -492,7 +492,7 @@ const saveImageToDevice = async () => {
       if (navigator.canShare({ files: [file] })) {
         await navigator.share({
           files: [file],
-          title: 'บันทึกใบแจ้งหนี้',
+          title: 'แจ้งค่าเช่าค่ะ',
         })
         return
       }
