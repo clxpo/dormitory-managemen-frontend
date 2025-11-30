@@ -289,7 +289,7 @@
         <!-- Bill Content for Image Generation -->
         <div ref="billContent" class="bill-print" id="bill-to-share">
           <div class="bill-header">
-            <h2 style="text-align: center; margin: 0; color: #333;">ใบแจ้งหนี้ค่าเช่าห้องพัก</h2>
+            <h2 style="text-align: center; margin: 0; color: #333;">ใบแจ้งค่าเช่าห้องพัก</h2>
             <div style="text-align: center; margin: 15px 0; font-size: 18px; color: #666;">
               <strong>{{ selectedBill.month }} {{ selectedBill.year }}</strong>
             </div>
